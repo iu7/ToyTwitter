@@ -174,6 +174,74 @@ def following():
     else:
         return "fail"
     
+@app.route('/api/user_feed',  methods=['GET'])
+def user_feed():
+    url = 'http://localhost:{port}/api/user_feed?userId={uid}'.format(port=config.FEED_PORT,uid='3')
+    a, error = getJSONdata(url, 'GET', 'user_feed')
+    if not error:
+        return jsonify(a)
+    else:
+        return "fail"
+    
+@app.route('/api/rest_feed_get',  methods=['GET'])
+def rest_feed_get():
+    url = 'http://localhost:{port}/api/rest_feed?userId={uid}'.format(port=config.FEED_PORT,uid='1')
+    a, error = getJSONdata(url, 'GET', 'rest_feed_get')
+    if not error:
+        return jsonify(a)
+    else:
+        return "fail"
+    
+@app.route('/api/rest_feed_post',  methods=['GET'])
+def rest_feed_post():
+    url = 'http://localhost:{port}/api/rest_feed?userId={uid}&isRepost={isRepost}'.format(port=config.FEED_PORT,uid='1',isRepost='0')
+    values = { 'note': 'Please work #Afftar #vypiy #yadu' }
+    data = urllib.urlencode(values)
+    req = urllib2.Request(url, data)
+    resp = urllib2.urlopen(req)
+    answ = json.loads(resp.read())
+    if not ('error' in answ):
+        return jsonify(answ)
+    else:
+        return "fail"
+
+@app.route('/api/rest_feed_repost',  methods=['GET'])
+def rest_feed_repost():
+    url = 'http://localhost:{port}/api/rest_feed?userId={uid}&isRepost={isRepost}&repostId={repostId}'.format(port=config.FEED_PORT,uid='1',isRepost='1',repostId='3')
+    a, error = getJSONdata(url, 'POST', 'rest_feed_repost')
+    if not error:
+        return jsonify(a)
+    else:
+        return "fail"
+ 
+@app.route('/api/rest_feed_delete',  methods=['GET'])
+def rest_feed_delete():
+    url = 'http://localhost:{port}/api/rest_feed?noteId={nid}'.format(port=config.FEED_PORT,nid='6') # 1
+    a, error = getJSONdata(url, 'DELETE', 'rest_feed_delete')
+    if not error:
+        return jsonify(a)
+    else:
+        return "fail"
+
+@app.route('/api/search_tag',  methods=['GET'])
+def search_tag():
+    url = 'http://localhost:{port}/api/search_tag?keyword={keyword}'.format(port=config.SEARCH_PORT,keyword='afftar') # 1
+    a, error = getJSONdata(url, 'GET', 'search_tag')
+    if not error:
+        return jsonify(a)
+    else:
+        return "fail"
+    
+@app.route('/api/search_user',  methods=['GET'])
+def search_user():
+    url = 'http://localhost:{port}/api/search_user?keyword={keyword}'.format(port=config.SEARCH_PORT,keyword='valik') # 1
+    a, error = getJSONdata(url, 'GET', 'search_user')
+    if not error:
+        return jsonify(a)
+    else:
+        return "fail"
+
+
 
 
 if __name__ == '__main__':

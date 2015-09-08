@@ -8,77 +8,32 @@ from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import gen_salt
 #from flask_oauthlib.provider import OAuth2Provider
 import json, math
+import DB
 from logger import Logger
 
 app = Flask(__name__, template_folder='templates')
 app.debug = True
 app.secret_key = 'BSV88'
 app.config.update({
-    'SQLALCHEMY_DATABASE_URI': 'sqlite:///db' + str(datetime.utcnow()) + '.sqlite',
+    'SQLALCHEMY_DATABASE_URI': 'sqlite:///db{timecode}.sqlite'.format(timecode=datetime.utcnow()), # datetime.utcnow()
 })
-db = SQLAlchemy(app)
+#db = SQLAlchemy(app)
+
+fullDB = DB.getDB(app)
+db = fullDB['db']
+Users = fullDB['Users']
+Session = fullDB['Session']
+LoginPas = fullDB['LoginPas']
+Subscribes = fullDB['Subscribes']
+Notes = fullDB['Notes']
+Tags = fullDB['Tags']
 
 SALT_LENGTH = 3
-SESSION_EXPIRES = 1000
+SESSION_EXPIRES = 1000000
 
-log = Logger("db_log.txt", "DB")
+log = Logger("db_log.txt", "createDB")
 
 # need to gen procedure
-
-class Users(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    notes = db.relationship("Notes", cascade="delete")
-    loginPas = db.relationship("LoginPas", cascade="delete")
-    name = db.Column(db.String(40))
-    mail = db.Column(db.String(60), unique=True, nullable=False)
-    registrationTime = db.Column(db.DateTime, nullable=False)
-    log.write("Users is created")
-
-class Session(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    #users = db.relationship('Users')
-    userId = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
-    accessToken = db.Column(db.String(255), unique=True, nullable=False)
-    #refreshToken = db.Column(db.String(255), unique=True)
-    expires = db.Column(db.DateTime, nullable=False)
-    log.write("Session is created")
-
-class LoginPas(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    #users = db.relationship('Users')
-    userId = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
-    login = db.Column(db.String(255), unique=True, nullable=False)
-    password = db.Column(db.String(255), unique=False, nullable=False)
-    log.write("LoginPas is created")
-
-class Subscribes(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    #users = db.relationship('Users')
-    userId = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
-    subId = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
-    log.write("Subscribes is created")
-
-class Notes(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    #users = db.relationship('Users')
-    #notes = db.relationship('Notes')
-    userId = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
-    note = db.Column(db.String(140))
-    notes = db.relationship("Notes", cascade="delete")
-    tags = db.relationship("Tags", cascade="delete")
-    repost = db.Column(db.Boolean, default=False, nullable=False)
-    repostId = db.Column(db.Integer, db.ForeignKey('notes.id'), nullable=True)
-    repostCount = db.Column(db.Integer, default=0, nullable=False)
-    registrationTime = db.Column(db.DateTime, nullable=False)
-    log.write("Notes is created")
-
-class Tags(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    tagName = db.Column(db.String(140), nullable=False)
-    #notes = db.relationship('Notes')
-    noteId = db.Column(db.Integer, db.ForeignKey('notes.id'), nullable=False)
-    log.write("Tags is created")
-
 
 #create
 def createUsers():
@@ -227,6 +182,6 @@ if __name__ == '__main__':
     # update test
     # pass
     # delete test
-    deleteTest()
+    #deleteTest()
     #app.run(debug=True)
 

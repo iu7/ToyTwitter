@@ -75,9 +75,5 @@ def reg_session():
     log.write("{method} rest_session return an error".format(method=request.method), 1)
     return jsonify(error='1')
 
-@app.route('/api/test',  methods=['GET', 'PUT', 'POST', 'DELETE'])
-def test_session():
-    return "ok"
-
 if __name__ == '__main__':
     app.run(host='localhost', port=config.SESSION_PORT, debug=True)
