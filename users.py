@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 from datetime import datetime, timedelta
 from flask import Flask
 from flask import session, request
@@ -8,11 +10,14 @@ from flask_oauthlib.provider import OAuth2Provider
 import json, math
 from logger import Logger
 import DB
-import config
+from config import Config
 import sys
 
 reload(sys)  
 sys.setdefaultencoding('utf8')
+
+log = Logger("users_log.txt", "Users")
+config = Config()
 
 app = Flask(__name__, template_folder='templates')
 app.debug = True
@@ -25,8 +30,6 @@ db = fullDB['db']
 Users = fullDB['Users']
 LoginPas = fullDB['LoginPas']
 Subscribes = fullDB['Subscribes']
-
-log = Logger("users_log.txt", "Users")
 
 # make global
 
@@ -52,7 +55,7 @@ def api_user_by_login():
     if user:
         return jsonify(userId=user.userId)
     log.write("user_by_login return an error", 1)
-    return jsonify(error='1')
+    return jsonify(error='2', error_message='Неправильный логин или пароль')
 
 #get full
 @app.route('/api/user_access',  methods=['GET'])
@@ -164,7 +167,9 @@ def rest_user():
         userId = request.args.get('userId', '')
         user = Users.query.filter_by(id=userId).first()
         if user:
-            return jsonify(id=user.id, name=user.name)
+            followers = Subscribes.query.filter_by(subId=userId).count()
+            following = Subscribes.query.filter_by(userId=userId).count()
+            return jsonify(id=user.id, name=user.name, followers=followers, following=following)
     if request.method == 'POST':
         login = request.args.get('login', '')
         pas = request.args.get('pas', '')
@@ -220,4 +225,6 @@ def rest_user():
 
 
 if __name__ == '__main__':
+    assert len(sys.argv) == 6, "Front needs services ports"
+    config.load_config(int(sys.argv[1]), int(sys.argv[2]), int(sys.argv[3]), int(sys.argv[4]), int(sys.argv[5]))
     app.run(host='localhost', port=config.USERS_PORT, debug=True)

@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 from datetime import datetime, timedelta
 from flask import Flask
 from flask import session, request
@@ -7,13 +9,16 @@ from sqlalchemy import func
 from werkzeug.security import gen_salt
 from flask_oauthlib.provider import OAuth2Provider
 import json, math
-import config
+from config import Config
 from logger import Logger
 import DB
 import sys  
 
 reload(sys)  
 sys.setdefaultencoding('utf8')
+
+log = Logger("search_log.txt", "Search")
+config = Config()
 
 app = Flask(__name__, template_folder='templates')
 app.debug = True
@@ -27,7 +32,6 @@ Users = fullDB['Users']
 Notes = fullDB['Notes']
 Tags = fullDB['Tags']
 
-log = Logger("search_log.txt", "Search")
 
 #REST
 
@@ -58,11 +62,11 @@ def search_tag():
     ids = []
     for x in notesId:
         ids.append(x[0])
-    notes = Notes.query.filter(Notes.id.in_(ids)).join(Users, Users.id==Notes.userId).add_columns(Users.name, Notes.userId, Notes.note, Notes.repost, Notes.repostId, Notes.repostCount).all()
+    notes = Notes.query.filter(Notes.id.in_(ids)).join(Users, Users.id==Notes.userId).add_columns(Users.name, Notes.id, Notes.userId, Notes.note, Notes.repost, Notes.repostId, Notes.repostCount).all()
 
     array = []
     for n in notes:
-        array.append({'userId': n.userId, 'name': n.name, 'note': n.note, 'isRepost': n.repost, 'repostCount': n.repostCount})
+        array.append({'id': n.id, 'userId': n.userId, 'name': n.name, 'note': n.note, 'isRepost': n.repost, 'repostCount': n.repostCount})
 
     return json.dumps({'elements': array, 'page': p, 'max_page': max_page, 'count': count})    
 
@@ -75,13 +79,15 @@ def search():
     count = Users.query.filter(func.lower(Users.name)==func.lower(keyword)).count()
 
     p, pp, max_page = pagination(p, pp, count)
-    users = Users.query.filter_by(name=keyword).offset((p-1)*pp).limit(pp).all()
+    users = Users.query.filter(func.lower(Users.name)==func.lower(keyword)).offset((p-1)*pp).limit(pp).all()
     
     array = []
     for u in users:
-        array.append({'id': u.id, 'name': u.name})
+        array.append({'userId': u.id, 'name': u.name})
 
     return json.dumps({'elements': array, 'page': p, 'max_page': max_page, 'count': count})    
 
 if __name__ == '__main__':
+    assert len(sys.argv) == 6, "Front needs services ports"
+    config.load_config(int(sys.argv[1]), int(sys.argv[2]), int(sys.argv[3]), int(sys.argv[4]), int(sys.argv[5]))
     app.run(host='localhost', port=config.SEARCH_PORT, debug=True)

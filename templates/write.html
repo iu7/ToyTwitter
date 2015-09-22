@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title></title>
+      <!-- Bootstrap core CSS -->
+    <link href="{{ url_for('static', filename='css/bootstrap.min.css')}}" rel="stylesheet">
+    <!-- Bootstrap theme -->
+    <link href="{{ url_for('static', filename='css/bootstrap-theme.min.css')}}" rel="stylesheet">
+</head>
+<body>
+<div class="container theme-showcase" role="main">
+    {% if status %}
+    <table><tr>
+    <td width="200">Приветствуем {% if status.name %}, {{ status.name }}{% endif %}</td>
+    {% if status.redirectToIndexButton %}<td><form method="get" action="/"><button type="submit" class="btn btn-warning">Вход/Регистрация</button></form></td>{% endif %}
+    {% if status.homeButton %}<td><form method="get" action="/main"><button type="submit" class="btn btn-primary">Домой</button></form></td>{% endif %}
+    {% if status.tweetButton %}<td><form method="get" action="/write"><button type="submit" class="btn btn-info">Написать</button></form></td>{% endif %}
+    {% if status.searchUserButton %}<td><form method="get" action="/search_user"><button type="submit" class="btn btn-success">Искать пользователя</button></form></td>{% endif %}
+    {% if status.searchTagButton %}<td><form method="get" action="/search_tag"><button type="submit" class="btn btn-success">Искать запись</button></form></td>{% endif %}
+    {% if status.exitButton %}<td><form method="get" action="/exit"><button type="submit" class="btn btn-danger">Выход</button></form></td>{% endif %}
+  </tr></table>
+  {% endif %}
+  
+    {% if msg %}
+    <div class="alert alert-danger" role="alert">
+        <strong>Oh snap!</strong> Message: {{ msg }}. Change a few things up and try submitting again.
+    </div>
+{% endif %}
+
+    <p>Написать сообщение (не больше 140 символов)</p>
+    <form method="post" action="/write"><input type="text" name="note" value="" class="form-control"><button type="submit" class="btn btn-info">Написать</button></form>
+</div>
+</body>
+</html>

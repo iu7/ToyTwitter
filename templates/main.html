@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title></title>
+      <!-- Bootstrap core CSS -->
+    <link href="{{ url_for('static', filename='css/bootstrap.min.css')}}" rel="stylesheet">
+    <!-- Bootstrap theme -->
+    <link href="{{ url_for('static', filename='css/bootstrap-theme.min.css')}}" rel="stylesheet">
+</head>
+<body>
+<div class="container theme-showcase" role="main">
+    {% if status %}
+    <table><tr>
+    <td width="200">Приветствуем {% if status.name %}, {{ status.name }}{% endif %}</td>
+    {% if status.redirectToIndexButton %}<td><form method="get" action="/"><button type="submit" class="btn btn-warning">Вход/Регистрация</button></form></td>{% endif %}
+    {% if status.homeButton %}<td><form method="get" action="/main"><button type="submit" class="btn btn-primary">Домой</button></form></td>{% endif %}
+    {% if status.tweetButton %}<td><form method="get" action="/write"><button type="submit" class="btn btn-info">Написать</button></form></td>{% endif %}
+    {% if status.searchUserButton %}<td><form method="get" action="/search_user"><button type="submit" class="btn btn-success">Искать пользователя</button></form></td>{% endif %}
+    {% if status.searchTagButton %}<td><form method="get" action="/search_tag"><button type="submit" class="btn btn-success">Искать запись</button></form></td>{% endif %}
+    {% if status.exitButton %}<td><form method="get" action="/exit"><button type="submit" class="btn btn-danger">Выход</button></form></td>{% endif %}
+  </tr></table>
+  {% endif %}
+  
+  {% if menuData %}
+  <div class="row">
+  <div class="col-md-6">
+        <table class="table table-bordered">
+  <tr><td><a href="{{ feedLink }}?userId={% if userId %}{{ userId }}{% else %}{{ curId }}{% endif %}">{{ menuData.name }}</a></td></tr>
+  <tr><td><a href="{{ followingLink }}?userId={% if userId %}{{ userId }}{% else %}{{ curId }}{% endif %}">Читает: {{ menuData.following }}</a></td></tr>
+  <tr><td><a href="{{ followerLink }}?userId={% if userId %}{{ userId }}{% else %}{{ curId }}{% endif %}">Читатели: {{ menuData.followers }}</a></td></tr>
+    {% if menuData.subscribeButton %}<tr><td><form method="post" action="/subscribe"><button type="submit" class="btn btn-success">Подписаться</button><input type="hidden" name="userId" value="{{ userId }}"></form></td></tr>{% endif %}
+    {% if menuData.unsubscribeButton %}<tr><td><form method="post" action="/unsubscribe"><button type="submit" class="btn btn-primary">Отписаться</button><input type="hidden" name="userId" value="{{ userId }}"></form></td></tr>{% endif %}
+    {% if menuData.settingsButton %}<tr><td><form method="get" action="/settings"><button type="submit" class="btn btn-info" >Настройки</button></form></td></tr>{% endif %}
+    </table>
+</div></div>
+  {% endif %}
+  
+  <p>Лента</p>
+  {% if feed %}
+  <div class="row">
+  <div class="col-md-6">
+    <table class="table table-striped">
+        <thead>
+        <tr>
+            <th>Пользователь</th>
+            <th>Текст</th>
+            <th>Репост</th>
+            <th>Репостов</th>
+            <th>Время</th> 
+            {% if curId %}<th>Действие</th>{% endif %}
+        </tr>
+        </thead>
+        <tbody>
+        {% for e in feed.elements %}
+        <tr>
+            {% if e.isRepost %}
+            <td><a href="{{ feedLink }}?userId={{ e.repostUserId }}">{{ e.repostName }}</a></td> 
+            {% else %}
+            <td><a href="{{ feedLink }}?userId={{ e.userId }}">{{ e.name }}</a></td> 
+            {% endif %}
+            <td>{{ e.note }}</td> 
+            <td>{% if e.isRepost %}{{ e.name }}{% else %}{% endif %}</td> 
+            <td>{{ e.repostCount }}</td> 
+            <td>{{ e.registrationTime }}</td> 
+            {% if curId %}<td>{% if e.userId==curId %}
+            <form method="post" action="/delete_tweet"><button type="submit" class="btn btn-danger">Удалить</button><input type="hidden" name="tweetId" value="{{ e.id }}"></form> 
+            {% else %}
+            <form method="post" action="/retweet"><button type="submit" class="btn btn-success">Распространить</button><input type="hidden" name="tweetId" value="{% if e.isRepost %}{{ e.repostId }}{% else %}{{ e.id }}{% endif %}"></form> 
+            {% endif %}</td>{% endif %}
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+</div>
+    {% endif %}
+{% if pages %}
+<p>
+    {% for e in pages %}
+        <a href="{{ feedLink }}?p={{ e }}{% if userId %}&userId={{ userId }}{% endif %}">{{ e }}</a>
+    {% endfor %}
+</p>
+  <!-- GEN PAGE-LINK FOR -->
+{% endif %}
+</div>
+</body>
+</html>

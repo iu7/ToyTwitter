@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title></title>
+      <!-- Bootstrap core CSS -->
+    <link href="{{ url_for('static', filename='css/bootstrap.min.css')}}" rel="stylesheet">
+    <!-- Bootstrap theme -->
+    <link href="{{ url_for('static', filename='css/bootstrap-theme.min.css')}}" rel="stylesheet">
+</head>
+<body>
+<div class="container theme-showcase" role="main">
+    <table><tr>
+    <td width="200">Добро пожаловать в ToyTwitter!</td>
+    <td><form method="get" action="/search_user"><button type="submit" class="btn btn-success">Искать пользователя</button></form></td>
+    <td><form method="get" action="/search_tag"><button type="submit" class="btn btn-success">Искать запись</button></form></td>
+  </tr></table>
+    
+    {% if msg %}
+    <div class="alert alert-danger" role="alert">
+        <strong>Oh snap!</strong> Message: {{ msg }}. Change a few things up and try submitting again.
+    </div>
+{% endif %}
+
+    <p>Введите логин и пароль</p>
+    <form method="post" action="/login">
+        <p>Логин:  <input type="text" name="login" class="form-control"> </p>
+        <p>Пароль:  <input type="password" name="pas" class="form-control"> </p>
+        <button type="submit" class="btn btn-primary">Войти</button>
+    </form>
+    <p>Или зарегестрируйтесь</p>
+    <form method="post" action="/register">
+        <p>Логин:    <input type="text" name="login" class="form-control"> </p>
+        <p>Пароль:  <input type="password" name="pas" class="form-control"> </p>
+        <p>Имя:  <input type="text" name="name" class="form-control" > </p>
+        <p>E-mail:    <input type="text" name="mail" class="form-control"> </p>
+    <button type="submit" class="btn btn-primary">Зарегистрироваться</button>
+    </form>
+</div>
+</body>
+</html>

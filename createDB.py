@@ -15,7 +15,7 @@ app = Flask(__name__, template_folder='templates')
 app.debug = True
 app.secret_key = 'BSV88'
 app.config.update({
-    'SQLALCHEMY_DATABASE_URI': 'sqlite:///db{timecode}.sqlite'.format(timecode=datetime.utcnow()), # datetime.utcnow()
+    'SQLALCHEMY_DATABASE_URI': 'sqlite:///db.sqlite',#'SQLALCHEMY_DATABASE_URI': 'sqlite:///db{timecode}.sqlite'.format(timecode=datetime.utcnow()), # datetime.utcnow()
 })
 #db = SQLAlchemy(app)
 
@@ -176,7 +176,7 @@ def deleteTest():
 if __name__ == '__main__':
     db.create_all()
     # create test
-    createTest()
+    #createTest()
     # read test
     # pass
     # update test

@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title></title>
+      <!-- Bootstrap core CSS -->
+    <link href="{{ url_for('static', filename='css/bootstrap.min.css')}}" rel="stylesheet">
+    <!-- Bootstrap theme -->
+    <link href="{{ url_for('static', filename='css/bootstrap-theme.min.css')}}" rel="stylesheet">
+</head>
+<body>
+    {% if status %}
+    <table><tr>
+    <td width="200">Приветствуем {% if status.name %}, {{ status.name }}{% endif %}</td>
+    {% if status.redirectToIndexButton %}<td><form method="get" action="/"><button type="submit" class="btn btn-warning">Вход/Регистрация</button></form></td>{% endif %}
+    {% if status.homeButton %}<td><form method="get" action="/main"><button type="submit" class="btn btn-primary">Домой</button></form></td>{% endif %}
+    {% if status.tweetButton %}<td><form method="get" action="/write"><button type="submit" class="btn btn-info">Написать</button></form></td>{% endif %}
+    {% if status.searchUserButton %}<td><form method="get" action="/search_user"><button type="submit" class="btn btn-success">Искать пользователя</button></form></td>{% endif %}
+    {% if status.searchTagButton %}<td><form method="get" action="/search_tag"><button type="submit" class="btn btn-success">Искать запись</button></form></td>{% endif %}
+    {% if status.exitButton %}<td><form method="get" action="/exit"><button type="submit" class="btn btn-danger">Выход</button></form></td>{% endif %}
+  </tr></table>
+  {% endif %}
+
+    {% if msg %}
+    <div class="alert alert-danger" role="alert">
+        <strong>Oh snap!</strong> Message: {{ msg }}. Change a few things up and try submitting again.
+    </div>
+{% endif %}
+  
+    <p>Настройки</p>
+    <form method="post" action="/settings">
+        <p>Старый пароль:  <input type="password" name="oldPas"> </p>
+        <p>Новый пароль:  <input type="password" name="newPas"> </p>
+        <p>Имя:  <input type="text" name="name" value="{{ name }}"></p>
+        <p>E-mail:    <input type="text" name="mail" value="{{ email }}"> </p>
+    <button type="submit" class="btn btn-success">Внести изменения</button>
+    </form>
+    <form method="post" action="/delete_account"><button type="submit" class="btn btn-danger">Удалить аккаунт</button></form>
+</body>
+</html>

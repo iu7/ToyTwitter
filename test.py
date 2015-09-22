@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 from datetime import datetime, timedelta
 from flask import Flask
 from flask import session, request
@@ -7,13 +9,14 @@ from werkzeug.security import gen_salt
 from flask_oauthlib.provider import OAuth2Provider
 from logger import Logger
 import urllib, urllib2, json, math
-import config
+from config import Config
 import sys  
 
 reload(sys)  
 sys.setdefaultencoding('utf8')
 
 log = Logger("test_log.txt", "Test")
+config = Config()
 
 app = Flask(__name__)
 app.debug = True
@@ -57,7 +60,7 @@ def session_post():
 
 @app.route('/api/session_put',  methods=['GET'])
 def session_put():
-    url = 'http://localhost:{port}/api/rest_session?sid={sid}'.format(port=config.SESSION_PORT,sid='K5m')
+    url = 'http://localhost:{port}/api/rest_session?sid={sid}'.format(port=config.SESSION_PORT,sid='Xnm')
     a, error = getJSONdata(url, 'PUT', 'session_put')
     if not error:
         return jsonify(a)
@@ -176,7 +179,7 @@ def following():
     
 @app.route('/api/user_feed',  methods=['GET'])
 def user_feed():
-    url = 'http://localhost:{port}/api/user_feed?userId={uid}'.format(port=config.FEED_PORT,uid='3')
+    url = 'http://localhost:{port}/api/user_feed?userId={uid}'.format(port=config.FEED_PORT,uid='2')
     a, error = getJSONdata(url, 'GET', 'user_feed')
     if not error:
         return jsonify(a)
@@ -194,7 +197,7 @@ def rest_feed_get():
     
 @app.route('/api/rest_feed_post',  methods=['GET'])
 def rest_feed_post():
-    url = 'http://localhost:{port}/api/rest_feed?userId={uid}&isRepost={isRepost}'.format(port=config.FEED_PORT,uid='1',isRepost='0')
+    url = 'http://localhost:{port}/api/rest_feed?userId={uid}&isRepost={isRepost}'.format(port=config.FEED_PORT,uid='2',isRepost='0')
     values = { 'note': 'Please work #Afftar #vypiy #yadu' }
     data = urllib.urlencode(values)
     req = urllib2.Request(url, data)

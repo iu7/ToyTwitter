@@ -1,5 +1,9 @@
 from flask_sqlalchemy import SQLAlchemy
 from logger import Logger
+from sqlalchemy import event
+from config import Config
+
+config = Config()
 
 log = Logger("db_log.txt", "DB")
 
@@ -10,6 +14,7 @@ def getDB(app):
     class Users(db.Model):
         id = db.Column(db.Integer, primary_key=True)
         notes = db.relationship("Notes", cascade="delete")
+        session = db.relationship("Session", cascade="delete")
         loginPas = db.relationship("LoginPas", cascade="delete")
         suser = db.relationship('Subscribes', cascade="delete", backref = 'user', lazy = 'dynamic', foreign_keys = 'Subscribes.userId')
         ssub = db.relationship('Subscribes', cascade="delete", backref = 'sub', lazy = 'dynamic', foreign_keys = 'Subscribes.subId')
@@ -42,7 +47,7 @@ def getDB(app):
     class Notes(db.Model):
         id = db.Column(db.Integer, primary_key=True)
         userId = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
-        note = db.Column(db.String(140))
+        note = db.Column(db.String(config.MESSAGE_LENGTH))
         notes = db.relationship("Notes", cascade="delete")
         tags = db.relationship("Tags", cascade="delete")
         repost = db.Column(db.Boolean, default=False, nullable=False)
@@ -56,7 +61,20 @@ def getDB(app):
         tagName = db.Column(db.String(140), nullable=False)
         noteId = db.Column(db.Integer, db.ForeignKey('notes.id'), nullable=False)
         log.write("Tags is created")
-        
+
+    def after_insert_note(mapper, connection, target):
+        if target.repost:
+            r = Notes.query.filter_by(id=target.repostId).first()
+            Notes.query.filter_by(id=target.repostId).update({'repostCount': r.repostCount + 1})
+
+    def after_delete_note(mapper, connection, target):
+        if target.repost:
+            r = Notes.query.filter_by(id=target.repostId).first()
+            Notes.query.filter_by(id=target.repostId).update({'repostCount': r.repostCount - 1})
+
+    event.listen(Notes, 'after_insert', after_insert_note)
+    event.listen(Notes, 'after_delete', after_delete_note)
+    
     return dict({'db': db,
             'Users': Users,
             'Session': Session,

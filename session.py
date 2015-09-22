@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 from datetime import datetime, timedelta
 from flask import Flask
 from flask import session, request
@@ -6,13 +8,16 @@ from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import gen_salt
 from flask_oauthlib.provider import OAuth2Provider
 import json, math
-import config
+from config import Config
 from logger import Logger
 import DB
 import sys  
 
 reload(sys)  
 sys.setdefaultencoding('utf8')
+
+log = Logger("session_log.txt", "Session")
+config = Config()
 
 app = Flask(__name__, template_folder='templates')
 app.debug = True
@@ -24,8 +29,6 @@ fullDB = DB.getDB(app)
 db = fullDB['db']
 Users = fullDB['Users']
 Session = fullDB['Session']
-
-log = Logger("session_log.txt", "Session")
 
 #REST
 @app.route('/api/rest_session',  methods=['GET', 'PUT', 'POST', 'DELETE'])
@@ -40,7 +43,7 @@ def reg_session():
             else:
                 db.session.delete(a)
                 db.session.commit()
-
+        return jsonify(error='0')
     if request.method == 'PUT':
         sid = request.args.get('sid', '')
         s = Session.query.filter_by(accessToken=sid).first()
@@ -76,4 +79,6 @@ def reg_session():
     return jsonify(error='1')
 
 if __name__ == '__main__':
+    assert len(sys.argv) == 6, "Front needs services ports"
+    config.load_config(int(sys.argv[1]), int(sys.argv[2]), int(sys.argv[3]), int(sys.argv[4]), int(sys.argv[5]))
     app.run(host='localhost', port=config.SESSION_PORT, debug=True)

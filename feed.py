@@ -1,15 +1,17 @@
+# -*- coding: utf-8 -*-
+
 from datetime import datetime, timedelta
 from flask import Flask, url_for
 from flask import session, request
 from flask import render_template, redirect, jsonify
 from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy import or_
+from sqlalchemy import or_, and_
 from werkzeug.security import gen_salt
 from flask_oauthlib.provider import OAuth2Provider
 import json, math
 from logger import Logger
 import DB
-import config
+from config import Config
 import sys
 import re
 
@@ -30,6 +32,7 @@ Notes = fullDB['Notes']
 Tags = fullDB['Tags']
 
 log = Logger("feed_log.txt", "Feed")
+config = Config()
 
 # make global
 # select tags
@@ -75,17 +78,22 @@ def rest_feed():
 
         p = int(request.args.get('p', config.DEFAULT_PAGE))
         pp = int(request.args.get('pp', config.DEFAULT_PER_PAGE))
-        count = db.session.query(Notes.id, Notes.repostId).filter(Notes.userId.in_(usersId), or_(Notes.repostId != userId, Notes.repostId == None)).count()
-        p, pp, max_page = pagination(p, pp, count)
-
-        notes = db.session.query(Notes.id, Notes.userId, Notes.repost, Notes.repostId, Notes.note, Notes.repostCount).filter(Notes.userId.in_(usersId), or_(Notes.repostId != userId, Notes.repostId == None)).all()
+        parentNotes = db.aliased(Notes, name='parent_notes')
+        #notes = db.session.query(Notes.id, Notes.userId, Notes.repost, Notes.repostId, Notes.note, Notes.repostCount).outerjoin(parentNotes, Notes.id == parentNotes.repostId).filter(Notes.userId.in_(usersId), or_(Notes.userId != userId, parentNotes.repostId == None))
+        #notes = db.session.query(Notes.id, Notes.userId, Notes.repost, Notes.repostId, Notes.note, Notes.repostCount).outerjoin(parentNotes, Notes.id == parentNotes.repostId).filter(Notes.userId.in_(usersId))
+        notes = db.session.query(Notes.id, Notes.userId, Notes.repost, Notes.repostId, Notes.note, Notes.repostCount, Notes.registrationTime).order_by(Notes.id.desc()).filter(Notes.userId.in_(usersId))
         iid = 0
         iuserId = 1
         irepost = 2
         irepostId = 3
         inote = 4
         irepostCount = 5
-        
+        iregistrationTime = 6
+
+        count = notes.count()
+        p, pp, max_page = pagination(p, pp, count)
+        notes = notes.offset((p-1)*pp).limit(pp).all()
+        log.write(notes)
         array = []
         # forgive me father for i have sinned
         for n in notes:
@@ -93,11 +101,13 @@ def rest_feed():
             if n[irepost]:
                 r = Notes.query.filter_by(id=n[irepostId]).first()
                 ur = Users.query.filter_by(id=r.userId).first()
-                array.append({'userId': n[iuserId], 'name': u.name, 'note': r.note, 'isRepost': n[irepost], 'repostId': n[irepostId], 'repostUserId': r.userId, 'repostName': ur.name, 'repostCount': r.repostCount})
+                array.append({'id': n[iid], 'userId': n[iuserId], 'name': u.name, 'note': r.note, 'isRepost': n[irepost], 'repostId': n[irepostId], 
+                              'repostUserId': r.userId, 'repostName': ur.name, 'repostCount': r.repostCount,  'registrationTime': n[iregistrationTime].strftime("%d/%m/%y %H:%M")})
             else:
-                array.append({'userId': n[iuserId], 'name': u.name, 'note': n[inote], 'isRepost': n[irepost], 'repostCount': n[irepostCount]})
+                array.append({'id': n[iid], 'userId': n[iuserId], 'name': u.name, 'note': n[inote], 'isRepost': n[irepost], 'repostCount': n[irepostCount], 'registrationTime': n[iregistrationTime].strftime("%d/%m/%y %H:%M")})
         return json.dumps({'elements': array, 'page': p, 'max_page': max_page, 'count': count})
     if request.method == 'POST':
+        # repost check
         userId = request.args.get('userId', '')
         isRepost = request.args.get('isRepost', 'False')
         repostId = request.args.get('repostId', '')
@@ -107,11 +117,10 @@ def rest_feed():
         if user:
             if isRepost == 'True' or isRepost == '1':
                 r = Notes.query.filter_by(id=repostId).first()
-                Notes.query.filter_by(id=repostId).update({'repostCount': r.repostCount + 1})
-                n = Notes(userId=userId, repost=True, repostId=repostId, repostCount=0, registrationTime=registrationTime, note=None)
-                db.session.add(n)
-                db.session.commit()
-                n = Notes.query.filter_by(userId=userId, registrationTime=registrationTime).first()
+                if not r.repost:
+                    n = Notes(userId=userId, repost=True, repostId=repostId, repostCount=0, registrationTime=registrationTime, note=None)
+                    db.session.add(n)
+                    db.session.commit()
             else:
                 n = Notes(userId=userId, repost=False, repostId=None, repostCount=0, registrationTime=registrationTime, note=note)
                 db.session.add(n)
@@ -124,16 +133,17 @@ def rest_feed():
                 db.session.commit()
             return jsonify(answer='Success')
     if request.method == 'DELETE':
+        userId = request.args.get('userId', '')
         noteId = request.args.get('noteId', '')
         n = Notes.query.filter_by(id=noteId).first()
         if n:
-            if n.repost:
-                r = Notes.query.filter_by(id=n.repostId).first()
-                Notes.query.filter_by(id=repostId).update({'repostCount': r.repostCount - 1})
+            log.write(userId)
+            log.write(n.userId)
+            log.write(n.repost)
+            if int(n.userId) == int(userId):
+                db.session.delete(n)
                 db.session.commit()
-            db.session.delete(n)
-            db.session.commit()
-            return jsonify(answer='Success')
+                return jsonify(answer='Success')
     log.write("{method} rest_feed return an error".format(method=request.method), 1)
     return jsonify(error='1')
 
@@ -150,7 +160,8 @@ def user_feed():
     count = Notes.query.filter_by(userId=userId).count()
     
     p, pp, max_page = pagination(p, pp, count)
-    notes = Notes.query.filter_by(userId=userId).join(Users, Notes.userId==Users.id).add_columns(Users.name, Notes.userId, Notes.note, Notes.repost, Notes.repostId, Notes.repostCount).offset((p-1)*pp).limit(pp).all()
+    notes = Notes.query.order_by(Notes.id.desc()).filter_by(userId=userId).join(Users, Notes.userId==Users.id).add_columns(
+        Users.name, Notes.id, Notes.userId, Notes.note, Notes.repost, Notes.repostId, Notes.repostCount, Notes.registrationTime).offset((p-1)*pp).limit(pp).all()
     
     array = []
     # forgive me father for i have sinned
@@ -158,12 +169,15 @@ def user_feed():
         if n.repost:
             r = Notes.query.filter_by(id=n.repostId).first()
             u = Users.query.filter_by(id=r.userId).first()
-            array.append({'userId': n.userId, 'name': n.name, 'note': r.note, 'isRepost': n.repost, 'repostId': n.repostId, 'repostUserId': r.userId, 'repostName': u.name, 'repostCount': r.repostCount})
+            array.append({'id': n.id, 'userId': n.userId, 'name': n.name, 'note': r.note, 'isRepost': n.repost, 'repostId': n.repostId, 
+                          'repostUserId': r.userId, 'repostName': u.name, 'repostCount': r.repostCount, 'registrationTime': n.registrationTime.strftime("%d/%m/%y %H:%M")})
         else:
-            array.append({'userId': n.userId, 'name': n.name, 'note': n.note, 'isRepost': n.repost, 'repostCount': n.repostCount})
+            array.append({'id': n.id, 'userId': n.userId, 'name': n.name, 'note': n.note, 'isRepost': n.repost, 'repostCount': n.repostCount, 'registrationTime': n.registrationTime.strftime("%d/%m/%y %H:%M")})
 
     return json.dumps({'elements': array, 'page': p, 'max_page': max_page, 'count': count})
 
 
 if __name__ == '__main__':
+    assert len(sys.argv) == 6, "Front needs services ports"
+    config.load_config(int(sys.argv[1]), int(sys.argv[2]), int(sys.argv[3]), int(sys.argv[4]), int(sys.argv[5]))
     app.run(host='localhost', port=config.FEED_PORT, debug=True)
